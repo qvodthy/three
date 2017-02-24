@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style type="text/css">
+        html, body { height: 100%; margin: 0; padding: 0; }
+        #map { height: 100%; }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<script type="text/javascript">
+
+    var God = {
+        address: '上海市浦东新区孙环路177弄42栋501',
+    };
+
+    var suobi = {
+        address: '复旦大学(邯郸校区)',
+    };
+
+    var dongbi = {
+        address: '东华大学松江校区',
+    };
+
+    var players = [God, suobi, dongbi];
+
+    var map;
+    function initMap() {
+        var geocoder = new google.maps.Geocoder();
+
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: {lat: -34.397, lng: 150.644},
+            zoom: 8
+        });
+
+        var s = geocodeAddress(geocoder);
+    }
+
+
+    function geocodeAddress(geocoder, resultsMap) {
+        var address = ["复旦大学(邯郸校区)", "东华大学松江校区"];
+        address.forEach(function (a) {
+            geocoder.geocode({'address': a}, function(results, status) {
+                if (status === google.maps.GeocoderStatus.OK) {
+                    console.log(results[0].geometry.location.toString());
+                } else {
+                    alert('Geocode was not successful for the following reason: ' + status);
+                }
+            });
+        })
+    }
+
+</script>
+<script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAQ2lQAfU7YfSyqpFDNeeqRwwylsZwDnUM&callback=initMap">
+</script>
+</body>
+</html>
