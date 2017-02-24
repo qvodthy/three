@@ -9,6 +9,7 @@
 <body>
 <div id="map"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+<script src="https://unpkg.com/@reactivex/rxjs@5.0.0-beta.12/dist/global/Rx.js"></script>
 <script type="text/javascript">
 
     var God = {
@@ -28,17 +29,33 @@
     var map;
     function initMap() {
         var geocoder = new google.maps.Geocoder();
+        var service = new google.maps.DistanceMatrixService();
+
+        players.forEach(function (player) {
+            geocoder.geocode({'address': player.address}, function(results, status) {
+                if (status === google.maps.GeocoderStatus.OK) {
+                    player.location = results[0].geometry.location;
+                } else {
+                    alert('Geocode was not successful for the following reason: ' + status);
+                }
+            });
+        });
+
+        console.log(_.max(players, function (player) {
+            return player.location.lat();
+        }).location.lat());
 
         map = new google.maps.Map(document.getElementById('map'), {
             center: {lat: -34.397, lng: 150.644},
             zoom: 8
         });
 
-        var s = geocodeAddress(geocoder);
+//        geocodeAddress(geocoder);
+
     }
 
 
-    function geocodeAddress(geocoder, resultsMap) {
+    function geocodeAddress(geocoder) {
         var address = ["复旦大学(邯郸校区)", "东华大学松江校区"];
         address.forEach(function (a) {
             geocoder.geocode({'address': a}, function(results, status) {
@@ -48,7 +65,7 @@
                     alert('Geocode was not successful for the following reason: ' + status);
                 }
             });
-        })
+        });
     }
 
 </script>
