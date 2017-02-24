@@ -28,22 +28,22 @@
 
     var map;
     function initMap() {
-        var geocoder = new google.maps.Geocoder();
         var service = new google.maps.DistanceMatrixService();
+//        var sbj = new Rx.Subject();
 
-        players.forEach(function (player) {
+        /*players.forEach(function (player) {
             geocoder.geocode({'address': player.address}, function(results, status) {
                 if (status === google.maps.GeocoderStatus.OK) {
                     player.location = results[0].geometry.location;
+                    sbj.next(player);
                 } else {
                     alert('Geocode was not successful for the following reason: ' + status);
                 }
             });
         });
-
-        console.log(_.max(players, function (player) {
-            return player.location.lat();
-        }).location.lat());
+        sbj.subscribe(p => console.log(p));*/
+        operator(Rx.Observable.from(players))
+            .subscribe(player => console.log(_.has(player, 'location')));
 
         map = new google.maps.Map(document.getElementById('map'), {
             center: {lat: -34.397, lng: 150.644},
@@ -66,6 +66,32 @@
                 }
             });
         });
+    }
+
+    function operator(input) {
+        var geocoder = new google.maps.Geocoder();
+
+        var output = Rx.Observable.create(function subscribe(observer) {
+            input.subscribe({
+                next: (v) => observer.next(10 * v),
+                /*next: function (v) {
+                    console.log('next');
+                    geocoder.geocode({'address': v.address}, function(results, status) {
+                        console.log('geocoder');
+                        if (status === google.maps.GeocoderStatus.OK) {
+                            v.location = results[0].geometry.location;
+                            observer.next('map');
+                        } else {
+                            alert('Geocode was not successful for the following reason: ' + status);
+                        }
+                    });
+                },*/
+                next: v => 10,
+                error: (err) => observer.error(err),
+                complete: () => observer.complete()
+            });
+        });
+        return output;
     }
 
 </script>
