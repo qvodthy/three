@@ -29,21 +29,62 @@
     var map;
     function initMap() {
         var service = new google.maps.DistanceMatrixService();
-//        var sbj = new Rx.Subject();
+        let geocoder = new google.maps.Geocoder();
 
-        /*players.forEach(function (player) {
+        Promise.all(players.map(player => new Promise((resolve, reject) => {
             geocoder.geocode({'address': player.address}, function(results, status) {
                 if (status === google.maps.GeocoderStatus.OK) {
-                    player.location = results[0].geometry.location;
-                    sbj.next(player);
+                    resolve(_.extend(player, {location: results[0].geometry.location}));
                 } else {
-                    alert('Geocode was not successful for the following reason: ' + status);
+                    reject('Geocode was not successful for the following reason: ' + status);
                 }
             });
+        }))).then(res => {
+            let zoom = {
+                lat: {
+                    from: _.min(res, player => player.location.lat()).location.lat(),
+                    to: _.max(res, player => player.location.lat()).location.lat(),
+                },
+                lng: {
+                    from: _.min(res, player => player.location.lng()).location.lng(),
+                    to: _.max(res, player => player.location.lng()).location.lng(),
+                }
+            };
+
+            const SCALE = 5;
+
+            Promise.all(_.chain(SCALE*SCALE)
+                .range()
+                .map(p => ({
+                    lat: Math.floor(p/SCALE)*(zoom.lat.to - zoom.lat.from)/SCALE + zoom.lat.from,
+                    lng: (p%SCALE)*(zoom.lng.to - zoom.lng.from)/SCALE + zoom.lng.from,
+                }))
+                .map(p => new Promise((resolve, reject) => {
+                    service.getDistanceMatrix({
+                        'origins': [p],
+                        'destinations': res.map(player => player.location),
+                        'travelMode': google.maps.TravelMode.TRANSIT}, function(results, status) {
+                        if (status === google.maps.GeocoderStatus.OK) {
+                            resolve(_.extend(p, {distance: _.chain(results.rows[0].elements)
+                                .map(ele => ele.duration.value)
+                                .reduce((prev, curr) => prev+curr)
+                                .value()}));
+                        } else {
+                            reject('DistanceMatrixService was not successful for the following reason: ' + status);
+                        }
+                    });
+                }))
+                .value())
+                .then(ress => console.log(
+                    geocoder.geocode({'location': _.pick(_.min(ress, r => r.distance), ['lat', 'lng'])}, (results, status) => {
+                        if (status === google.maps.GeocoderStatus.OK) {
+                            console.log(results[0].formatted_address);
+                        } else {
+                            reject('Geocode was not successful for the following reason: ' + status);
+                        }
+                    })
+                ));
         });
-        sbj.subscribe(p => console.log(p));*/
-        operator(Rx.Observable.from(players))
-            .subscribe(player => console.log(_.has(player, 'location')));
 
         map = new google.maps.Map(document.getElementById('map'), {
             center: {lat: -34.397, lng: 150.644},
@@ -96,7 +137,7 @@
 
 </script>
 <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAQ2lQAfU7YfSyqpFDNeeqRwwylsZwDnUM&callback=initMap">
+        src="https://maps.googleapis.com/maps/api/js?key=此处填你们的KEY&callback=initMap">
 </script>
 </body>
 </html>
