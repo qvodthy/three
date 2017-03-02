@@ -51,15 +51,15 @@
                 }
             };
 
-            const SCALE = 5;
+            const SCALE = 7;
 
-            Promise.all(_.chain(SCALE*SCALE)
-                .range()
+            Rx.Observable.interval(200)
+                .take(SCALE*SCALE)
                 .map(p => ({
                     lat: Math.floor(p/SCALE)*(zoom.lat.to - zoom.lat.from)/SCALE + zoom.lat.from,
                     lng: (p%SCALE)*(zoom.lng.to - zoom.lng.from)/SCALE + zoom.lng.from,
                 }))
-                .map(p => new Promise((resolve, reject) => {
+                .flatMap(p => new Promise((resolve, reject) => {
                     service.getDistanceMatrix({
                         'origins': [p],
                         'destinations': res.map(player => player.location),
@@ -74,8 +74,16 @@
                         }
                     });
                 }))
-                .value())
-                .then(ress => geocoder.geocode({'location': _.pick(_.min(ress, r => r.distance), ['lat', 'lng'])}, (results, status) => {
+                .min((a, b) => {
+                    if (a.distance > b.distance) {
+                        return 1;
+                    } else if (a.distance < b.distance) {
+                        return -1;
+                    } else {
+                        return 0;
+                    }
+                })
+                .subscribe(x => geocoder.geocode({'location': _.pick(x, ['lat', 'lng'])}, (results, status) => {
                     if (status === google.maps.GeocoderStatus.OK) {
                         console.log(results[0].formatted_address);
                     } else {
@@ -92,7 +100,7 @@
 
 </script>
 <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=替换你自己的KEY&callback=initMap">
+        src="https://maps.googleapis.com/maps/api/js?key=[your key]&callback=initMap">
 </script>
 </body>
 </html>
